@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menú Principal - Proyectos ESP32</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+}
+        h1 { color: #e94560; font-size: 3rem; text-align: center; margin-bottom: 50px; text-shadow: 0 0 20px rgba(233, 69, 96, 0.5); letter-spacing: 3px; }
+        .menu-container { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; max-width: 1200px; }
+        .game-card {
+            position: relative; width: 300px; height: 400px; border-radius: 20px; overflow: hidden; cursor: pointer;
+            transition: all 0.4s ease; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); text-decoration: none; animation: float 3s ease-in-out infinite;
+        }
+        .game-card:nth-child(2) { animation-delay: 0.5s; }
+        .game-card:nth-child(3) { animation-delay: 1s; }
+        .game-card:nth-child(4) { animation-delay: 1.5s; }
+        .game-card:nth-child(5) { animation-delay: 2s; }
+        .game-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 20px 50px rgba(233, 69, 96, 0.4); animation: none;
+        }
+        .game-card img { width: 100%; height: 100%; object-fit: cover; transition: all 0.4s ease; }
+        .game-card:hover img { transform: scale(1.1); }
+        .game-card .overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+            padding: 30px 20px 20px; transition: all 0.4s ease;
+        }
+        .game-card:hover .overlay { background: linear-gradient(to top, rgba(233, 69, 96, 0.9), transparent); }
+        .game-card h2 { color: white; font-size: 1.5rem; text-align: center; text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); }
+        .game-card .shine {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: rotate(45deg); transition: all 0.6s ease; pointer-events: none;
+        }
+        .game-card:hover .shine { top: 100%; left: 100%; }
+        .tekken .overlay { border-bottom: 3px solid #ff6b35; }
+        .mostwanted .overlay { border-bottom: 3px solid #00ff88; }
+        .banana .overlay { border-bottom: 3px solid #ffd700; }
+        .snake .overlay { border-bottom: 3px solid #00ff88; }
+        .dns .overlay { border-bottom: 3px solid #58a6ff; }
+        .snake, .dns {
+            background: linear-gradient(135deg, #020408, #051220, #0a2535);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .snake-icon { font-size: 110px; line-height: 1; filter: drop-shadow(0 0 20px #00ff88); }
+        .dns-icon { font-size: 110px; line-height: 1; filter: drop-shadow(0 0 20px #58a6ff); }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @media (max-width: 1000px) {
+            .menu-container { flex-direction: column; align-items: center; }
+            .game-card { width: 100%; max-width: 350px; height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🏆 PROYECTOS ESP32 🏆</h1>
+    <div class="menu-container">
+        <a href="./dns.html" class="game-card dns">
+            <div class="shine"></div>
+            <div class="dns-icon">📡</div>
+            <div class="overlay"><h2>DNS Anomaly</h2></div>
+        </a>
+        <a href="./tekken/index.html" class="game-card tekken">
+            <div class="shine"></div>
+            <img src="jin.jpg" alt="Tekken">
+            <div class="overlay"><h2>Tekken</h2></div>
+        </a>
+        <a href="./most_wanted/index.html" class="game-card mostwanted">
+            <div class="shine"></div>
+            <img src="wanted.jpg" alt="Most Wanted">
+            <div class="overlay"><h2>Most Wanted</h2></div>
+        </a>
+        <a href="./banana_monkey/index.html" class="game-card banana">
+            <div class="shine"></div>
+            <img src="banana_monkey.png" alt="Banana Monkey">
+            <div class="overlay"><h2>Banana Monkey</h2></div>
+        </a>
+        <a href="./snake/index.html" class="game-card snake">
+            <div class="shine"></div>
+            <div class="snake-icon">🐍</div>
+            <div class="overlay"><h2>Neon Snake</h2></div>
+        </a>
+    </div>
+</body>
+</html>

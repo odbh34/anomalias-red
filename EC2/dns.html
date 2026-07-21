@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP32 DNS Anomaly — TinyML Traffic Classifier</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:#0d1117; color:#e6edf3;
+    font-family:'Courier New', monospace;
+    min-height:100vh; display:flex;
+    flex-direction:column; align-items:center;
+    padding:20px; gap:12px;
+  }
+  h1 { color:#58a6ff; font-size:1rem; text-align:center; letter-spacing:1px; }
+  .subtitle { color:#888; font-size:0.7rem; margin-top:-8px; }
+  .conn-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center; }
+  input.ip-in { background:#0d1117; border:1px solid #30363d; color:#e6edf3; font-family:'Courier New',monospace; font-size:12px; padding:5px 10px; border-radius:6px; width:200px; }
+  button.conn-btn { background:#1f6feb; border:none; color:white; font-size:12px; padding:5px 12px; border-radius:6px; cursor:pointer; }
+  .badge { font-size:1.6rem; font-weight:bold; padding:18px 24px; border-radius:10px; width:100%; max-width:760px; text-align:center; transition:all 0.4s; }
+  .bg   { background:#0a2d0a; color:#3fb950; border:2px solid #3fb950; }
+  .fg   { background:#0a1a2d; color:#58a6ff; border:2px solid #58a6ff; }
+  .sos  { background:#2d0a0a; color:#f78166; border:2px solid #f78166; }
+  .unknown { background:#1e1e2e; color:#888;  border:2px solid #333; }
+  .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:760px; }
+  .card { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; text-align:center; }
+  .card .lbl { color:#888; font-size:10px; margin-bottom:2px; }
+  .card .val { font-size:1.3rem; font-weight:bold; }
+  .card .val.gold { color:#e3b341; }
+  .card .val.blue { color:#58a6ff; }
+  .card .desc { color:#555; font-size:9px; margin-top:2px; }
+  .charts2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; max-width:760px; }
+  .panel { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; width:100%; max-width:760px; }
+  .panel2 { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px; }
+  .clbl { color:#aaa; font-size:10px; margin-bottom:4px; font-weight:bold; letter-spacing:0.5px; }
+  .axis-x { color:#555; font-size:9px; text-align:center; }
+  .axis-y-wrap { display:flex; align-items:stretch; gap:6px; }
+  .axis-y-label { writing-mode:vertical-rl; transform:rotate(180deg); color:#555; font-size:9px; text-align:center; min-width:12px; white-space:nowrap; }
+  .ts-row { display:flex; align-items:center; gap:8px; font-size:11px; color:#555; }
+  .dot { width:7px; height:7px; border-radius:50%; background:#f78166; display:inline-block; flex-shrink:0; }
+  .class-dist { display:flex; gap:6px; width:100%; max-width:760px; height:28px; border-radius:6px; overflow:hidden; }
+  .class-dist div { display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; transition:width 0.5s; }
+  .dist-bg { background:#3fb950; }
+  .dist-fg { background:#58a6ff; }
+  .dist-sos { background:#f78166; }
+  .dist-none { background:#30363d; color:#555; }
+</style>
+</head>
+<body>
+<h1>ESP32 DNS ANOMALY &mdash; TinyML Traffic Classifier</h1>
+<div class="subtitle">Clasificaci&oacute;n en tiempo real de tr&aacute;fico DNS por ventanas de 3s</div>
+<div class="conn-row">
+  <input class="ip-in" id="ipInput" value="18.116.200.170" placeholder="IP de AWS">
+  <button class="conn-btn" onclick="reconectar()">Conectar</button>
+  <span style="font-size:10px;color:#555;">ws://IP:3001</span>
+</div>
+<div class="badge unknown" id="badge">[ CONECTANDO... ]</div>
+<div class="metrics">
+  <div class="card"><div class="lbl">Ventana Actual</div><div class="val gold" id="curDnsQty">&mdash;</div><div class="desc">consultas DNS en la ventana</div></div>
+  <div class="card"><div class="lbl">Dominios &Uacute;nicos</div><div class="val blue" id="curUnique">&mdash;</div><div class="desc">en la ventana actual</div></div>
+  <div class="card"><div class="lbl">Dominios Nuevos</div><div class="val" id="curNew" style="color:#e3b341;">&mdash;</div><div class="desc">nunca vistos antes</div></div>
+  <div class="card"><div class="lbl">Anomaly Score</div><div class="val" id="curAnom">&mdash;</div><div class="desc">desviaci&oacute;n estad&iacute;stica</div></div>
+</div>
+<div class="charts2">
+  <div class="panel2">
+    <div class="clbl">Consultas DNS por ventana</div>
+    <div class="axis-y-wrap">
+      <div class="axis-y-label">dns_qty</div>
+      <div style="flex:1;"><div style="height:100px;"><canvas id="cQty"></canvas></div><div class="axis-x">&larr; ventanas recientes (3s c/u) &rarr;</div></div>
+    </div>
+  </div>
+  <div class="panel2">
+    <div class="clbl">Anomaly Score</div>
+    <div class="axis-y-wrap">
+      <div class="axis-y-label">Score</div>
+      <div style="flex:1;"><div style="height:100px;"><canvas id="cAnom"></canvas></div><div class="axis-x">&larr; ventanas recientes &rarr;</div></div>
+    </div>
+  </div>
+</div>
+<div class="panel">
+  <div class="clbl">Distribuci&oacute;n de clasificaciones (bg / fg / sos)</div>
+  <div class="class-dist" id="classDist">
+    <div class="dist-none" id="distNone" style="width:100%;">Esperando datos...</div>
+    <div class="dist-bg" id="distBg" style="width:0%;">bg</div>
+    <div class="dist-fg" id="distFg" style="width:0%;">fg</div>
+    <div class="dist-sos" id="distSos" style="width:0%;">sos</div>
+  </div>
+</div>
+<div class="charts2">
+  <div class="panel2">
+    <div class="clbl">Predicci&oacute;n del modelo TinyML por ventana</div>
+    <div class="axis-y-wrap">
+      <div class="axis-y-label">Clase</div>
+      <div style="flex:1;"><div style="height:100px;"><canvas id="cPred"></canvas></div><div class="axis-x">&larr; ventanas recientes &rarr;</div></div>
+    </div>
+  </div>
+  <div class="panel2">
+    <div class="clbl">Anomal&iacute;as detectadas (score &gt; 3.0)</div>
+    <div style="height:100px;display:flex;align-items:center;justify-content:center;"><canvas id="cAnomFlags"></canvas></div>
+  </div>
+</div>
+<div class="ts-row">
+  <span class="dot" id="dot"></span>
+  <span id="ts">Esperando datos...</span>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const MAX=60; const qtyData=Array(MAX).fill(null); const uniqData=Array(MAX).fill(null); const newData=Array(MAX).fill(null); const anomData=Array(MAX).fill(null); const predData=Array(MAX).fill(null); const labels=Array.from({length:MAX},(_,i)=>i); let cBg=0,cFg=0,cSos=0,tP=0;
+function updDist(){const t=cBg+cFg+cSos||1; document.getElementById('distBg').style.width=(cBg/t*100)+'%'; document.getElementById('distFg').style.width=(cFg/t*100)+'%'; document.getElementById('distSos').style.width=(cSos/t*100)+'%'; document.getElementById('distNone').style.width='0%'; document.getElementById('distBg').textContent='bg '+Math.round(cBg/t*100)+'%'; document.getElementById('distFg').textContent='fg '+Math.round(cFg/t*100)+'%'; document.getElementById('distSos').textContent='sos '+Math.round(cSos/t*100)+'%'; document.getElementById('distNone').textContent=''; }
+function push(a,v){a.push(v);if(a.length>MAX)a.shift();}
+const cQ=new Chart(document.getElementById('cQty'),{type:'bar',data:{labels,datasets:[{label:'dns_qty',data:qtyData,backgroundColor:'#e3b34188',borderColor:'#e3b341',borderWidth:1},{label:'unique',data:uniqData,backgroundColor:'#58a6ff88',borderColor:'#58a6ff',borderWidth:1},{label:'new',data:newData,backgroundColor:'#3fb95088',borderColor:'#3fb950',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{labels:{color:'#888',boxWidth:10,padding:6,font:{size:9}}}},scales:{x:{ticks:{color:'#555',font:{size:8},maxTicksLimit:8},grid:{color:'#ffffff08'}},y:{beginAtZero:true,ticks:{color:'#555',font:{size:8},maxTicksLimit:4},grid:{color:'#ffffff10'}}}}});
+const cA=new Chart(document.getElementById('cAnom'),{type:'line',data:{labels,datasets:[{data:anomData,borderColor:'#f78166',backgroundColor:'#f7816622',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:8},maxTicksLimit:8},grid:{color:'#ffffff08'}},y:{beginAtZero:true,ticks:{color:'#555',font:{size:8}},grid:{color:'#ffffff10'}}}}});
+const cP=new Chart(document.getElementById('cPred'),{type:'line',data:{labels,datasets:[{data:predData,borderColor:'#e3b341',backgroundColor:'#e3b34122',borderWidth:2,pointRadius:2,fill:true,stepped:true}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:8},maxTicksLimit:8},grid:{color:'#ffffff08'}},y:{min:-0.5,max:2.5,ticks:{color:'#555',font:{size:8},stepSize:1,callback:v=>v===0?'bg':v===1?'fg':v===2?'sos':''},grid:{color:'#ffffff10'}}}}});
+const fD=Array(MAX).fill(0);
+const cF=new Chart(document.getElementById('cAnomFlags'),{type:'line',data:{labels:Array.from({length:MAX},(_,i)=>i),datasets:[{data:Array(MAX).fill(0),borderColor:'#f78166',borderWidth:2,pointRadius:0,fill:false,stepped:true}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#555',font:{size:8},maxTicksLimit:6},grid:{color:'#ffffff08'}},y:{min:-0.5,max:1.5,ticks:{stepSize:1,callback:v=>v===0?'normal':v===1?'!!!':'',color:'#555',font:{size:8}},grid:{color:'#ffffff10'}}}}});
+function reconectar(){let ws=null;const ip=document.getElementById('ipInput').value.trim();ws=new WebSocket('ws://'+ip+':3001');
+ws.onopen=()=>{document.getElementById('dot').style.background='#3fb950';document.getElementById('ts').textContent='Conectado al WebSocket Broker';};
+ws.onmessage=(e)=>{const d=JSON.parse(e.data);if(d.dns_qty===undefined)return;const q=d.dns_qty||0,u=d.dns_unique||0,n=d.dns_new||0,a=d.anom||0,p=d.pred!==undefined?d.pred:0;const b=document.getElementById('badge');if(p===0){b.textContent='BACKGROUND \u2014 Reposo / Sin actividad';b.className='badge bg';}else if(p===1){b.textContent='FOREGROUND \u2014 Tr\u00e1fico normal de apps';b.className='badge fg';}else{b.textContent='SOSPECHOSO \u2014 Alta actividad / Posibles trackers';b.className='badge sos';}
+document.getElementById('curDnsQty').textContent=q;document.getElementById('curUnique').textContent=u;document.getElementById('curNew').textContent=n;const ae=document.getElementById('curAnom');ae.textContent=a.toFixed(1);ae.style.color=a>3?'#f78166':a>1?'#e3b341':'#3fb950';
+push(qtyData,q);push(uniqData,u);push(newData,n);push(anomData,a);push(predData,p);push(fD,a>3?1:0);cBg+=p===0?1:0;cFg+=p===1?1:0;cSos+=p===2?1:0;tP++;updDist();cQ.update('none');cA.update('none');cP.update('none');cF.data.datasets[0].data=fD.map(v=>v?1:0);cF.update('none');
+document.getElementById('dot').style.background='#3fb950';document.getElementById('ts').textContent='\u00daltima actualizaci\u00f3n: '+new Date().toLocaleTimeString();};
+ws.onclose=()=>{document.getElementById('badge').className='badge unknown';document.getElementById('badge').textContent='[ SIN CONEXI\u00d3N ]';document.getElementById('dot').style.background='#f78166';setTimeout(reconectar,3000);};ws.onerror=()=>ws.close();}
+reconectar();
+</script>
+</body>
+</html>

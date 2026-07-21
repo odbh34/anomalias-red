@@ -1,0 +1,61 @@
+======================================================================
+MÉTRICAS DE CLASIFICACIÓN - ÁRBOL DE DECISIÓN TINYML
+======================================================================
+
+Dataset: 123 ventanas (86 train / 37 test)
+Cross-validation (5-fold): 0.6260 ± 0.0589
+Precisión en test: 0.6486 (64.86%)
+Profundidad del árbol: 5
+Número de hojas: 9
+
+----------------------------------------------------------------------
+Clase            Precisión    Recall       F1-score     Muestras  
+----------------------------------------------------------------------
+background       0.2000       1.0000       0.3333       1         
+foreground       0.6667       0.3750       0.4800       16        
+sospechoso       0.7391       0.8500       0.7907       20        
+----------------------------------------------------------------------
+Accuracy                                   0.6486       37        
+
+
+MATRIZ DE CONFUSIÓN:
+                      background      foreground      sospechoso
+background                     1               0               0
+foreground                     4               6               6
+sospechoso                     0               3              17
+
+IMPORTANCIA DE CARACTERÍSTICAS:
+  dns_qty      0.8615
+  dns_new      0.1385
+  dns_unique   0.0000
+
+ÁRBOL DE DECISIÓN (TEXTO):
+|--- dns_qty <= 1.50
+|   |--- dns_new <= 0.50
+|   |   |--- class: 0
+|   |--- dns_new >  0.50
+|   |   |--- class: 0
+|--- dns_qty >  1.50
+|   |--- dns_qty <= 9.50
+|   |   |--- dns_new <= 0.50
+|   |   |   |--- dns_qty <= 3.50
+|   |   |   |   |--- class: 2
+|   |   |   |--- dns_qty >  3.50
+|   |   |   |   |--- class: 2
+|   |   |--- dns_new >  0.50
+|   |   |   |--- dns_qty <= 3.50
+|   |   |   |   |--- dns_new <= 1.50
+|   |   |   |   |   |--- class: 1
+|   |   |   |   |--- dns_new >  1.50
+|   |   |   |   |   |--- class: 1
+|   |   |   |--- dns_qty >  3.50
+|   |   |   |   |--- dns_new <= 2.50
+|   |   |   |   |   |--- class: 2
+|   |   |   |   |--- dns_new >  2.50
+|   |   |   |   |   |--- class: 1
+|   |--- dns_qty >  9.50
+|   |   |--- class: 2
+
+
+Macro avg: precision=0.5353 recall=0.7417 f1=0.5347
+======================================================================
