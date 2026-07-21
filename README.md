@@ -63,14 +63,6 @@ Red/
 - El dashboard (`http://18.116.200.170/dns.html`) se conecta al WebSocket
   y muestra clasificaciones en tiempo real
 
-### Subir dashboard a EC2
-
-```bash
-scp -i EC2/keyAmazon.pem EC2/dns.html ubuntu@18.116.200.170:/tmp/
-ssh -i EC2/keyAmazon.pem ubuntu@18.116.200.170 \
-  "sudo cp /tmp/dns.html /var/www/html/dns.html"
-```
-
 ## Cómo compilar y flashear
 
 ```bash
